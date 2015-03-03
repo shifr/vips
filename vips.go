@@ -293,7 +293,12 @@ func Resize(buf []byte, o Options) ([]byte, error) {
 	length := C.size_t(0)
 	ptr := C.malloc(C.size_t(len(buf)))
 
-	C.vips_jpegsave_custom(colourspaced, &ptr, &length, 1, C.int(o.Quality), 0)
+	if typ == PNG {
+		C.vips_pngsave_custom(colourspaced, &ptr, &length, 1, C.int(o.Quality), 0)
+	} else {
+		C.vips_jpegsave_custom(colourspaced, &ptr, &length, 1, C.int(o.Quality), 0)
+	}
+
 	C.g_object_unref(C.gpointer(colourspaced))
 
 	// get back the buffer
