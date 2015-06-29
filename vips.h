@@ -69,6 +69,12 @@ vips_jpegsave_custom(VipsImage *in, void **buf, size_t *len, int strip, int qual
 }
 
 int
+vips_webpsave_custom(VipsImage *in, void **buf, size_t *len, int quality)
+{
+    return vips_webpsave_buffer(in, buf, len, "Q", quality, NULL);
+}
+
+int
 vips_pngsave_custom(VipsImage *in, void **buf, size_t *len, int strip, int quality, int interlace)
 {
     return vips_pngsave_buffer(in, buf, len, "interlace", interlace, NULL);

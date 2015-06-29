@@ -59,6 +59,7 @@ type Options struct {
 	Width        int
 	Crop         bool
 	Enlarge      bool
+	Webp         bool
 	Extend       Extend
 	Embed        bool
 	Interpolator Interpolator
@@ -293,7 +294,9 @@ func Resize(buf []byte, o Options) ([]byte, error) {
 	length := C.size_t(0)
 	ptr := C.malloc(C.size_t(len(buf)))
 
-	if typ == PNG {
+	if o.Webp {
+		C.vips_webpsave_custom(colourspaced, &ptr, &length, C.int(o.Quality))
+	} else if typ == PNG {
 		C.vips_pngsave_custom(colourspaced, &ptr, &length, 1, C.int(o.Quality), 0)
 	} else {
 		C.vips_jpegsave_custom(colourspaced, &ptr, &length, 1, C.int(o.Quality), 0)
