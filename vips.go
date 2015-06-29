@@ -68,16 +68,39 @@ type Options struct {
 }
 
 func init() {
+	Initialize()
+}
+
+var initialized bool
+
+func Initialize() {
+	if initialized {
+		return
+	}
+
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
-	err := C.vips_initialize()
-	if err != 0 {
+
+	if err := C.vips_initialize(); err != 0 {
 		C.vips_shutdown()
 		panic("unable to start vips!")
 	}
+
 	C.vips_concurrency_set(1)
 	C.vips_cache_set_max_mem(100 * 1048576) // 100Mb
 	C.vips_cache_set_max(500)
+
+	initialized = true
+}
+
+func Shutdown() {
+	if !initialized {
+		return
+	}
+
+	C.vips_shutdown()
+
+	initialized = false
 }
 
 func Debug() {
@@ -108,7 +131,11 @@ func Resize(buf []byte, o Options) ([]byte, error) {
 	case PNG:
 		C.vips_pngload_buffer_seq(unsafe.Pointer(&buf[0]), C.size_t(len(buf)), &image)
 	}
-	defer C.vips_thread_shutdown()
+
+	defer func() {
+		C.vips_thread_shutdown()
+		C.vips_error_clear()
+	}()
 
 	// defaults
 	if o.Quality == 0 {
@@ -304,7 +331,6 @@ func Resize(buf []byte, o Options) ([]byte, error) {
 
 	// cleanup
 	C.g_free(C.gpointer(ptr))
-	C.vips_error_clear()
 
 	return buf, nil
 }
@@ -312,7 +338,6 @@ func Resize(buf []byte, o Options) ([]byte, error) {
 func resizeError() error {
 	s := C.GoString(C.vips_error_buffer())
 	C.vips_error_clear()
-	C.vips_thread_shutdown()
 	return errors.New(s)
 }
 
