@@ -307,8 +307,9 @@ func Resize(buf []byte, o Options) ([]byte, error) {
 		debug("canvased same as affined")
 	}
 
-	// Always convert to sRGB colour space
+	currentInterpretaion := C.vips_image_guess_interpretation(image)
 
+	// Always convert to sRGB colour space
 	C.vips_colourspace_0(image, &tmpImage, C.VIPS_INTERPRETATION_sRGB)
 	C.g_object_unref(C.gpointer(image))
 	image = tmpImage
@@ -317,7 +318,7 @@ func Resize(buf []byte, o Options) ([]byte, error) {
 	length := C.size_t(0)
 	var ptr unsafe.Pointer
 
-	if o.Webp {
+	if o.Webp && currentInterpretaion != C.VIPS_INTERPRETATION_CMYK {
 		C.vips_webpsave_custom(image, &ptr, &length, C.int(o.Quality))
 	} else if typ == PNG {
 		C.vips_pngsave_custom(image, &ptr, &length, 1, C.int(o.Quality), 0)
