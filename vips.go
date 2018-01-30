@@ -66,6 +66,7 @@ type Options struct {
 	Interpolator Interpolator
 	Gravity      Gravity
 	Quality      int
+	Interlace    int
 }
 
 func init() {
@@ -322,11 +323,11 @@ func Resize(buf []byte, o Options) ([]byte, error) {
 	if o.Webp && currentInterpretaion != C.VIPS_INTERPRETATION_CMYK {
 		C.vips_webpsave_custom(image, &ptr, &length, C.int(o.Quality))
 	} else if o.Jpeg {
-		C.vips_jpegsave_custom(image, &ptr, &length, 1, C.int(o.Quality), 0)
+		C.vips_jpegsave_custom(image, &ptr, &length, 1, C.int(o.Quality), C.int(o.Interlace))
 	} else if typ == PNG {
-		C.vips_pngsave_custom(image, &ptr, &length, 1, C.int(o.Quality), 0)
+		C.vips_pngsave_custom(image, &ptr, &length, 1, C.int(o.Quality), C.int(o.Interlace))
 	} else {
-		C.vips_jpegsave_custom(image, &ptr, &length, 1, C.int(o.Quality), 0)
+		C.vips_jpegsave_custom(image, &ptr, &length, 1, C.int(o.Quality), C.int(o.Interlace))
 	}
 	C.g_object_unref(C.gpointer(image))
 
