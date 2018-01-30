@@ -60,6 +60,7 @@ type Options struct {
 	Crop         bool
 	Enlarge      bool
 	Webp         bool
+	Jpeg         bool
 	Extend       Extend
 	Embed        bool
 	Interpolator Interpolator
@@ -320,6 +321,8 @@ func Resize(buf []byte, o Options) ([]byte, error) {
 
 	if o.Webp && currentInterpretaion != C.VIPS_INTERPRETATION_CMYK {
 		C.vips_webpsave_custom(image, &ptr, &length, C.int(o.Quality))
+	} else if o.Jpeg {
+		C.vips_jpegsave_custom(image, &ptr, &length, 1, C.int(o.Quality), 0)
 	} else if typ == PNG {
 		C.vips_pngsave_custom(image, &ptr, &length, 1, C.int(o.Quality), 0)
 	} else {
