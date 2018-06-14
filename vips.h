@@ -34,6 +34,13 @@ vips_jpegload_buffer_shrink(void *buf, size_t len, VipsImage **out, int shrink)
 };
 
 int
+vips_jpegload_buffer_shrink_custom_autorotate(void *buf, size_t len, VipsImage **out, int shrink)
+{
+    return vips_jpegload_buffer(buf, len, out, "shrink", shrink, "autorotate", TRUE, NULL);
+};
+
+
+int
 vips_pngload_buffer_seq(void *buf, size_t len, VipsImage **out)
 {
     return vips_pngload_buffer(buf, len, out, "access", VIPS_ACCESS_SEQUENTIAL, NULL);

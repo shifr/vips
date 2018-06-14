@@ -237,10 +237,19 @@ func Resize(buf []byte, o Options) ([]byte, error) {
 		shrink = int(math.Floor(factor))
 		residual = float64(shrink) / factor
 		// Reload input using shrink-on-load
-		err := C.vips_jpegload_buffer_shrink(unsafe.Pointer(&buf[0]), C.size_t(len(buf)), &tmpImage, C.int(shrinkOnLoad))
+		var err_flag bool = false
+		if o.Autorotate {
+			if err := C.vips_jpegload_buffer_shrink_custom_autorotate(unsafe.Pointer(&buf[0]), C.size_t(len(buf)), &tmpImage, C.int(shrinkOnLoad)); err != 0 {
+				err_flag = true;
+			}
+		} else {
+			if err := C.vips_jpegload_buffer_shrink(unsafe.Pointer(&buf[0]), C.size_t(len(buf)), &tmpImage, C.int(shrinkOnLoad)); err != 0 {
+				err_flag = true;
+			}
+		}
 		C.g_object_unref(C.gpointer(image))
 		image = tmpImage
-		if err != 0 {
+		if err_flag {
 			return nil, resizeError()
 		}
 	}
