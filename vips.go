@@ -3,6 +3,7 @@ package vips
 /*
 #cgo pkg-config: vips
 #include "vips.h"
+
 */
 import "C"
 
@@ -39,6 +40,13 @@ const (
 	NOHALO
 )
 
+const (
+         VIPS_ACCESS_RANDOM uint = iota
+         VIPS_ACCESS_SEQUENTIAL
+         VIPS_ACCESS_SEQUENTIAL_UNBUFFERED
+         VIPS_ACCESS_LAST
+)
+
 type Extend int
 
 const (
@@ -67,6 +75,7 @@ type Options struct {
 	Gravity      Gravity
 	Quality      int
 	Interlace    int
+	Autorotate	 bool
 }
 
 func init() {
@@ -129,7 +138,11 @@ func Resize(buf []byte, o Options) ([]byte, error) {
 	// feed it
 	switch typ {
 	case JPEG:
-		C.vips_jpegload_buffer_seq(unsafe.Pointer(&buf[0]), C.size_t(len(buf)), &image)
+		if o.Autorotate {
+			C.vips_jpegload_buffer_custom_autorotate(unsafe.Pointer(&buf[0]), C.size_t(len(buf)), &image )
+		} else {
+			C.vips_jpegload_buffer_seq(unsafe.Pointer(&buf[0]), C.size_t(len(buf)), &image)
+		}
 	case PNG:
 		C.vips_pngload_buffer_seq(unsafe.Pointer(&buf[0]), C.size_t(len(buf)), &image)
 	}
