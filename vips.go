@@ -3,6 +3,7 @@ package vips
 /*
 #cgo pkg-config: vips
 #include "vips.h"
+
 */
 import "C"
 
@@ -39,6 +40,13 @@ const (
 	NOHALO
 )
 
+const (
+         VIPS_ACCESS_RANDOM uint = iota
+         VIPS_ACCESS_SEQUENTIAL
+         VIPS_ACCESS_SEQUENTIAL_UNBUFFERED
+         VIPS_ACCESS_LAST
+)
+
 type Extend int
 
 const (
@@ -60,11 +68,14 @@ type Options struct {
 	Crop         bool
 	Enlarge      bool
 	Webp         bool
+	Jpeg         bool
 	Extend       Extend
 	Embed        bool
 	Interpolator Interpolator
 	Gravity      Gravity
 	Quality      int
+	Interlace    int
+	Autorotate	 bool
 }
 
 func init() {
@@ -127,7 +138,11 @@ func Resize(buf []byte, o Options) ([]byte, error) {
 	// feed it
 	switch typ {
 	case JPEG:
-		C.vips_jpegload_buffer_seq(unsafe.Pointer(&buf[0]), C.size_t(len(buf)), &image)
+		if o.Autorotate {
+			C.vips_jpegload_buffer_custom_autorotate(unsafe.Pointer(&buf[0]), C.size_t(len(buf)), &image )
+		} else {
+			C.vips_jpegload_buffer_seq(unsafe.Pointer(&buf[0]), C.size_t(len(buf)), &image)
+		}
 	case PNG:
 		C.vips_pngload_buffer_seq(unsafe.Pointer(&buf[0]), C.size_t(len(buf)), &image)
 	}
@@ -222,10 +237,19 @@ func Resize(buf []byte, o Options) ([]byte, error) {
 		shrink = int(math.Floor(factor))
 		residual = float64(shrink) / factor
 		// Reload input using shrink-on-load
-		err := C.vips_jpegload_buffer_shrink(unsafe.Pointer(&buf[0]), C.size_t(len(buf)), &tmpImage, C.int(shrinkOnLoad))
+		var err_flag bool = false
+		if o.Autorotate {
+			if err := C.vips_jpegload_buffer_shrink_custom_autorotate(unsafe.Pointer(&buf[0]), C.size_t(len(buf)), &tmpImage, C.int(shrinkOnLoad)); err != 0 {
+				err_flag = true;
+			}
+		} else {
+			if err := C.vips_jpegload_buffer_shrink(unsafe.Pointer(&buf[0]), C.size_t(len(buf)), &tmpImage, C.int(shrinkOnLoad)); err != 0 {
+				err_flag = true;
+			}
+		}
 		C.g_object_unref(C.gpointer(image))
 		image = tmpImage
-		if err != 0 {
+		if err_flag {
 			return nil, resizeError()
 		}
 	}
@@ -320,10 +344,12 @@ func Resize(buf []byte, o Options) ([]byte, error) {
 
 	if o.Webp && currentInterpretaion != C.VIPS_INTERPRETATION_CMYK {
 		C.vips_webpsave_custom(image, &ptr, &length, C.int(o.Quality))
+	} else if o.Jpeg {
+		C.vips_jpegsave_custom(image, &ptr, &length, 1, C.int(o.Quality), C.int(o.Interlace))
 	} else if typ == PNG {
-		C.vips_pngsave_custom(image, &ptr, &length, 1, C.int(o.Quality), 0)
+		C.vips_pngsave_custom(image, &ptr, &length, 1, C.int(o.Quality), C.int(o.Interlace))
 	} else {
-		C.vips_jpegsave_custom(image, &ptr, &length, 1, C.int(o.Quality), 0)
+		C.vips_jpegsave_custom(image, &ptr, &length, 1, C.int(o.Quality), C.int(o.Interlace))
 	}
 	C.g_object_unref(C.gpointer(image))
 
